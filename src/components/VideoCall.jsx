@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
 
-const socket = io('https://meet-server-3.onrender.com'); // ✅ Deployed backend
+const socket = io('https://meet-server-3.onrender.com');
 
 export default function VideoCall() {
   const location = useLocation();
@@ -16,6 +16,12 @@ export default function VideoCall() {
   const [transcript, setTranscript] = useState([]);
   const [stats, setStats] = useState({ latency: 0, packetLoss: 0 });
 
+  const goFullscreen = (ref) => {
+    if (ref.current) {
+      ref.current.requestFullscreen();
+    }
+  };
+
   useEffect(() => {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(localStream => {
       setStream(localStream);
@@ -23,7 +29,7 @@ export default function VideoCall() {
 
       socket.emit('join-room', roomId);
 
-      socket.on('user-joined', () => {
+      socket.on('user-joined', (peerId) => {
         const peer = new Peer({
           initiator: true,
           trickle: false,
@@ -35,7 +41,7 @@ export default function VideoCall() {
         peerRef.current = peer;
 
         peer.on('signal', signal => {
-          socket.emit('signal', { roomId, signal });
+          socket.emit('signal', { roomId, signal, to: peerId });
         });
 
         peer.on('stream', remoteStream => {
@@ -43,7 +49,7 @@ export default function VideoCall() {
         });
       });
 
-      socket.on('signal', ({ signal }) => {
+      socket.on('signal', ({ signal, from }) => {
         if (!peerRef.current) {
           const peer = new Peer({
             initiator: false,
@@ -56,7 +62,7 @@ export default function VideoCall() {
           peerRef.current = peer;
 
           peer.on('signal', signal => {
-            socket.emit('signal', { roomId, signal });
+            socket.emit('signal', { roomId, signal, to: from });
           });
 
           peer.on('stream', remoteStream => {
@@ -113,25 +119,42 @@ export default function VideoCall() {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-xl font-bold">🎥 Smart Meeting Assistant</h2>
-      <p className="text-sm text-gray-500">Room ID: <span className="font-mono">{roomId}</span></p>
-      <div className="flex gap-4">
-        <video ref={localVideo} autoPlay muted className="w-1/2 border rounded" />
-        <video ref={remoteVideo} autoPlay className="w-1/2 border rounded" />
+    <div className="p-4 space-y-6">
+      <h2 className="text-2xl font-bold text-indigo-600">🎥 Smart Meeting Assistant</h2>
+      <p className="text-sm text-gray-600">Room ID: <span className="font-mono">{roomId}</span></p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="relative">
+          <video ref={localVideo} autoPlay muted className="w-full h-auto rounded shadow-lg border" />
+          <span className="absolute top-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">You</span>
+        </div>
+        <div className="relative">
+          <video ref={remoteVideo} autoPlay className="w-full h-auto rounded shadow-lg border" />
+          <span className="absolute top-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">Teammate</span>
+        </div>
       </div>
+
       <div className="space-x-2">
-        <button onClick={saveTranscript} className="px-4 py-2 bg-blue-500 text-white rounded">Save Transcript</button>
-        <button onClick={fetchMOM} className="px-4 py-2 bg-green-500 text-white rounded">Generate MOM</button>
+        <button onClick={() => goFullscreen(localVideo)} className="px-4 py-2 bg-gray-300 rounded">🔍 Fullscreen Me</button>
+        <button onClick={() => goFullscreen(remoteVideo)} className="px-4 py-2 bg-gray-300 rounded">🔍 Fullscreen Teammate</button>
       </div>
+
+      <div className="space-x-2">
+        <button onClick={saveTranscript} className="px-4 py-2 bg-blue-500 text-white rounded">💾 Save Transcript</button>
+        <button onClick={fetchMOM} className="px-4 py-2 bg-green-500 text-white rounded">🧠 Generate MOM</button>
+      </div>
+
       <div>
-        <h3 className="font-semibold">📊 Call Stats</h3>
+        <h3 className="font-semibold text-lg">📊 Call Stats</h3>
         <p>Latency: {stats.latency.toFixed(2)}s</p>
         <p>Packet Loss: {stats.packetLoss}</p>
       </div>
+
       <div>
-        <h3 className="font-semibold">📝 Live Transcript</h3>
-        <ul className="list-disc pl-5">{transcript.map((line, i) => <li key={i}>{line}</li>)}</ul>
+        <h3 className="font-semibold text-lg">📝 Live Transcript</h3>
+        <ul className="list-disc pl-5 space-y-1">
+          {transcript.map((line, i) => <li key={i}>{line}</li>)}
+        </ul>
       </div>
     </div>
   );
