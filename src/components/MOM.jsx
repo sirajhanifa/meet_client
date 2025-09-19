@@ -4,7 +4,8 @@ export default function MOM() {
   const [mom, setMom] = useState([]);
 
   const fetchMOM = async () => {
-    const res = await fetch('http://localhost:5000/api/mom/demo-room');
+    const res = await fetch('https://meet-server-3.onrender.com/api/mom/demo-room');
+
     const data = await res.json();
     setMom(data.actionItems);
   };

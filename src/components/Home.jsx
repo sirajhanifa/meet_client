@@ -11,8 +11,9 @@ export default function Home() {
   }, []);
 
   // Replace with your actual IP or tunnel URL
-  const frontendURL = 'http://172.31.98.86:5173'; // 👈 Update this if using ngrok or localtunnel
+  const frontendURL = 'https://meet-client-iota.vercel.app';
   const shareLink = `${frontendURL}/call?room=${roomId}`;
+
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareLink);

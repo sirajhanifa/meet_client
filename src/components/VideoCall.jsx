@@ -24,7 +24,14 @@ export default function VideoCall() {
       socket.emit('join-room', roomId);
 
       socket.on('user-joined', () => {
-        const peer = new Peer({ initiator: true, trickle: false, stream: localStream });
+        const peer = new Peer({
+          initiator: true,
+          trickle: false,
+          stream: localStream,
+          config: {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+          }
+        });
         peerRef.current = peer;
 
         peer.on('signal', signal => {
@@ -34,15 +41,18 @@ export default function VideoCall() {
         peer.on('stream', remoteStream => {
           remoteVideo.current.srcObject = remoteStream;
         });
-
-        socket.on('signal', ({ signal }) => {
-          peer.signal(signal);
-        });
       });
 
       socket.on('signal', ({ signal }) => {
         if (!peerRef.current) {
-          const peer = new Peer({ initiator: false, trickle: false, stream: localStream });
+          const peer = new Peer({
+            initiator: false,
+            trickle: false,
+            stream: localStream,
+            config: {
+              iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            }
+          });
           peerRef.current = peer;
 
           peer.on('signal', signal => {
@@ -54,6 +64,8 @@ export default function VideoCall() {
           });
 
           peer.signal(signal);
+        } else {
+          peerRef.current.signal(signal);
         }
       });
     });
