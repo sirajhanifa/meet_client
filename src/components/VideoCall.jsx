@@ -28,20 +28,12 @@ export default function VideoCall() {
       localVideo.current.srcObject = localStream;
 
       socket.emit('join-room', roomId);
-
       socket.on('user-joined', (peerId) => {
-        const peer = new Peer({
-          initiator: true,
-          trickle: false,
-          stream: localStream,
-          config: {
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-          }
-        });
+        const peer = new Peer({ initiator: true, stream });
         peerRef.current = peer;
 
         peer.on('signal', signal => {
-          socket.emit('signal', { roomId, signal, to: peerId });
+          socket.emit('signal', { roomId, signal, to: peerId }); // 👈 send to specific peer
         });
 
         peer.on('stream', remoteStream => {
@@ -49,20 +41,14 @@ export default function VideoCall() {
         });
       });
 
+
       socket.on('signal', ({ signal, from }) => {
         if (!peerRef.current) {
-          const peer = new Peer({
-            initiator: false,
-            trickle: false,
-            stream: localStream,
-            config: {
-              iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-            }
-          });
+          const peer = new Peer({ initiator: false, stream });
           peerRef.current = peer;
 
           peer.on('signal', signal => {
-            socket.emit('signal', { roomId, signal, to: from });
+            socket.emit('signal', { roomId, signal, to: from }); // 👈 respond to sender
           });
 
           peer.on('stream', remoteStream => {
@@ -74,6 +60,7 @@ export default function VideoCall() {
           peerRef.current.signal(signal);
         }
       });
+
     });
 
     const recognition = new window.webkitSpeechRecognition();
