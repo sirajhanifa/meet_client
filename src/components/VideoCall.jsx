@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
 
-const socket = io('http://172.31.98.86:5000'); // 👈 Your backend IP
+const socket = io('https://meet-server-3.onrender.com'); // ✅ Deployed backend
 
 export default function VideoCall() {
   const location = useLocation();
@@ -87,7 +87,7 @@ export default function VideoCall() {
   }, []);
 
   const saveTranscript = async () => {
-    await fetch('http://172.31.98.86:5000/api/transcript', {
+    await fetch('https://meet-server-3.onrender.com/api/transcript', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: roomId, transcript })
@@ -95,7 +95,7 @@ export default function VideoCall() {
   };
 
   const fetchMOM = async () => {
-    const res = await fetch(`http://172.31.98.86:5000/api/mom/${roomId}`);
+    const res = await fetch(`https://meet-server-3.onrender.com/api/mom/${roomId}`);
     const data = await res.json();
     alert('Action Items:\n' + data.actionItems.join('\n'));
   };
